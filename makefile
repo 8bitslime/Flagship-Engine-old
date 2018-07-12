@@ -1,6 +1,7 @@
 # Flagship Engine makefile (windows only at the moment)
 
 CC = clang
+AR = llvm-ar
 CFLAGS = -std=c11 -m64 -Wall -Wno-deprecated
 TARGET = flagship.exe
 export
