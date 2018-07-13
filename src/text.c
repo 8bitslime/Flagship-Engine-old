@@ -102,7 +102,7 @@ void text_draw(const char *string, float x, float y) {
 			
 			buffer[i] = (character_t){
 				{col, row},
-				{cursor[0] * 16, cursor[1] * 16}
+				{(cursor[0] + x) * 16, (cursor[1] + y) * 16}
 			};
 			
 			cursor[0]++;
