@@ -20,5 +20,6 @@ void cvar_register(cvar_t *cvar);
 cvar_t *cvar_find(const char *name);
 
 void cvar_set(const char *name, const char *string);
+void cvar_setc(cvar_t *cvar, const char *string);
 void cvar_setf(const char *name, float f);
 void cvar_seti(const char *name, int i);

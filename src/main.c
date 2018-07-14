@@ -1,7 +1,10 @@
 #include "text.h"
 #include "texture.h"
 #include "cvar.h"
+#include "cmd.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <GLFW/glfw3.h>
 
 cvar_t hello = {"hello", "13"};
@@ -12,11 +15,14 @@ void resize(GLFWwindow *window, int w, int h) {
 
 int main() {
 	
-	cvar_register(&hello);
-	cvar_set("hello", "107");
-	cvar_setf("hello", 7);
-	cvar_t *thing = cvar_find("hello");
-	printf("cvar value: %f %s\n", thing->fval, thing->value);
+	// cmd_init();
+	// cvar_register(&hello);
+	
+	// while (1) {
+	// 	char buffer[1024];
+	// 	gets_s(buffer, 1024);
+	// 	cmd_exec(buffer);
+	// }
 	
 	glfwInit();
 	GLFWwindow *window = glfwCreateWindow(650, 450, "Flagship Engine", NULL, NULL);
@@ -30,7 +36,6 @@ int main() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	texture_t t = texture_load("res/font.bmp");
-	// printf("%u\n", t);
 	
 	text_init();
 	
@@ -39,7 +44,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		text_bind(t);
-		text_draw("THANKS FOR WATCHING\n\nText rendering [CHECK]\nInstacned text [CHECK]\nCvar           [CHECK]\n\nTomorrow:\n dev console\n text input", 10, 8);
+		text_draw("Feeding my doggy! :)", 10, 8);
 		
 		glfwSwapBuffers(window);
 	}

@@ -65,12 +65,13 @@ cvar_t *cvar_find(const char *name) {
 
 void cvar_set(const char *name, const char *string) {
 	cvar_t *var = cvar_find(name);
-	
-	if (var == NULL) {
-		return;
-	}
-	
-	free(var->value);
+	if (var != NULL) {
+		cvar_setc(var, string);
+	} 
+}
+
+void cvar_setc(cvar_t *cvar, const char *string) {
+	free(cvar->value);
 	
 	int length = strlen(string);
 	//TODO: custom allocator
@@ -78,12 +79,12 @@ void cvar_set(const char *name, const char *string) {
 	strncpy(value, string, length);
 	value[length] = '\0';
 	
-	var->value = value;
+	cvar->value = value;
 	
-	if (var->flags & CVAR_INTEGER) {
-		var->ival = strtol(var->value, NULL, 10);
+	if (cvar->flags & CVAR_INTEGER) {
+		cvar->ival = strtol(cvar->value, NULL, 10);
 	} else {
-		var->fval = strtof(var->value, NULL);
+		cvar->fval = strtof(cvar->value, NULL);
 	}
 }
 
