@@ -53,65 +53,87 @@ cmd_t *cmd_find(const char *name) {
 }
 
 void cmd_exec(const char *command) {
-	cmd_tokenize(command);
+	char buffer[1024];
+	strncpy(buffer, command, 1023);
+	char *runner = buffer;
 	
-	if (!cmd_argc) {
-		return;
-	}
-	
-	cvar_t *cvar;
-	cmd_t *cmd;
-	
-	if ((cvar = cvar_find(cmd_argv[0]))) {
-		if (cmd_argc == 1) {
-			printf("%s\n", cvar->value);
-		} else {
-			cvar_setc(cvar, cmd_argv[1]);
+	while (*runner) {
+		int i, quotes = 0;
+		for (i = 0; runner[i]; i++) {
+			if (runner[i] == '"') {
+				quotes = !quotes;
+			} else if (runner[i] == ';' && !quotes) {
+				runner[i] = '\0';
+				break;
+			}
 		}
-	} else if ((cmd = cmd_find(cmd_argv[0]))) {
-		cmd->func();
+		cmd_tokenize(runner);
+		runner += i + 1;
+		
+		if (!cmd_argc) {
+			return;
+		}
+		
+		cvar_t *cvar;
+		cmd_t *cmd;
+		
+		if ((cvar = cvar_find(cmd_argv[0]))) {
+			if (cmd_argc == 1) {
+				printf("%s\n", cvar->value);
+			} else {
+				cvar_setc(cvar, cmd_argv[1]);
+			}
+		} else if ((cmd = cmd_find(cmd_argv[0]))) {
+			cmd->func();
+		}
 	}
 }
 
-void cmd_tokenize(const char *string) {
+void cmd_tokenize(char *buffer) {
 	for (;cmd_argc;) {
 		cmd_argv[--cmd_argc] = NULL;
 	}
 	
-	char buffer[1024] = {0};
-	strncpy(buffer, string, 1023);
+	// char buffer[1024] = {0};
+	// strncpy(buffer, string, 1023);
 	char *runner = buffer;
 	
 	int quotes = 0;
 	while (*runner) {
 		int i;
-		for (i = 0; runner[i] != '\0'; i++) {
+		for (i = 0; runner[i]; i++) {
 			while (*runner == ' ' && !quotes) {
 				runner++;
 			}
 			
 			if (runner[i] == '"') {
 				if (quotes) {
-					runner[i] = '\0';
+					//runner[i] = '\0';
 					quotes = !quotes;
 					break;
 				} else {
 					quotes = !quotes;
-					if (i > 0) {
-						runner[i] = '\0';
+					if (i) {
+						//runner[i] = '\0';
 						break;
 					}
 					runner++; --i;
 				}
 			} else if (runner[i] == ' ' && !quotes) {
-				runner[i] = '\0';
+				//runner[i] = '\0';
 				break;
 			}
 		}
-		if (*runner != '\0') {
+		if (*runner) {
 			cmd_argv[cmd_argc++] = runner;
 		}
-		runner = runner + i + 1;
+		
+		if (runner[i]) {
+			runner[i] = '\0';
+			runner += i + 1;
+		} else {
+			break;
+		}
 	}
 }
 

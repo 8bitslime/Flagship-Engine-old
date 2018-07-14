@@ -16,6 +16,6 @@ void cmd_register(cmd_t *cmd);
 cmd_t *cmd_find(const char *name);
 
 void cmd_exec(const char *command);
-void cmd_tokenize(const char *string);
+void cmd_tokenize(char *string);
 
 void cmd_init(void);
