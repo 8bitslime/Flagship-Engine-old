@@ -3,6 +3,7 @@
 #include "cvar.h"
 #include "cmd.h"
 #include "console.h"
+#include "mesh.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,12 +59,28 @@ int main() {
 	con_init();
 	text_init();
 	
-	// text_bind(t);
-	// con_draw(0, 0);
+	mesh_t mesh;
+	mesh_createStatic(&mesh, 2);
+	mesh_floatBufferData(&mesh, 0, 3, 3, (float[]){
+		0, 1, 0,
+		1, -1, 0,
+		-1, -1, 0
+	});
+	
+	mesh_elementBufferData(&mesh, 1, 3, (unsigned int[]) {
+		0, 1, 2
+	});
+	
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
+		
+		glUseProgram(0);
+		mesh_draw(&mesh, 3, 0);
 		
 		text_bind(t);
 		con_draw(0, 0);
