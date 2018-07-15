@@ -95,6 +95,9 @@ void text_draw(const char *string, float x, float y) {
 				cursor[0] = 0;
 				cursor[1]++;
 				continue;
+			} else if (*c == ' ') {
+				cursor[0]++;
+				continue;
 			}
 			
 			float col = (float)(*c % 16);

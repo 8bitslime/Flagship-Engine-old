@@ -1,7 +1,9 @@
 #include "cmd.h"
 #include "cvar.h"
-#include <string.h>
+#include "console.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAX_BUCKETS 512
 
@@ -108,19 +110,16 @@ void cmd_tokenize(char *buffer) {
 			
 			if (runner[i] == '"') {
 				if (quotes) {
-					//runner[i] = '\0';
 					quotes = !quotes;
 					break;
 				} else {
 					quotes = !quotes;
 					if (i) {
-						//runner[i] = '\0';
 						break;
 					}
 					runner++; --i;
 				}
 			} else if (runner[i] == ' ' && !quotes) {
-				//runner[i] = '\0';
 				break;
 			}
 		}
@@ -137,15 +136,21 @@ void cmd_tokenize(char *buffer) {
 	}
 }
 
-static void cmd_echo(void) {
-	for (int i = 1; i < cmd_argc; i++) {
-		printf("%s ", cmd_argv[i]);
-	}
-	printf("\n");
+static void cmd_quit(void) {
+	exit(0);
 }
 
+static void cmd_echo(void) {
+	for (int i = 1; i < cmd_argc; i++) {
+		con_printf("%s ", cmd_argv[i]);
+	}
+	con_print("\n");
+}
+
+static cmd_t quit = {"quit", cmd_quit};
 static cmd_t echo = {"echo", cmd_echo};
 
 void cmd_init(void) {
+	cmd_register(&quit);
 	cmd_register(&echo);
 }

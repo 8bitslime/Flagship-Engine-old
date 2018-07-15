@@ -19,6 +19,8 @@ void input_key(GLFWwindow *window, int key, int scancode, int action, int mods) 
 		switch (key) {
 			case GLFW_KEY_BACKSPACE: con_input('\b'); break;
 			case GLFW_KEY_ENTER:     con_input('\n'); break;
+			case GLFW_KEY_PAGE_UP:   con_seekUp();    break;
+			case GLFW_KEY_PAGE_DOWN: con_seekDown();  break;
 		}
 	}
 }
@@ -53,7 +55,11 @@ int main() {
 	
 	texture_t t = texture_load("res/font.bmp");
 	
+	con_init();
 	text_init();
+	
+	// text_bind(t);
+	// con_draw(0, 0);
 	
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -61,7 +67,6 @@ int main() {
 		
 		text_bind(t);
 		con_draw(0, 0);
-		text_draw("Working on the dev console", 10, 8);
 		
 		glfwSwapBuffers(window);
 	}
