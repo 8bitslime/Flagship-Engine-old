@@ -64,7 +64,7 @@ void cmd_addString(const char *string) {
 	char *buffer = buffer_getSpace(&command_buffer, length + 1);
 	
 	if (buffer == NULL) {
-		con_print("COMMAND BUFFER OVERFLOW!\n");
+		con_print("!command buffer overflow!\n");
 		return;
 	}
 	
@@ -113,7 +113,8 @@ void cmd_execFile(const char *fileName) {
 	FILE *file = fopen(fileName, "r");
 	
 	if (file == NULL) {
-		con_printf("!could not open file %s!\n", fileName);
+		con_printf("!could not open file \"%s\"!\n", fileName);
+		return;
 	}
 	
 	fseek(file, 0, SEEK_END);
@@ -208,7 +209,7 @@ static void cmd_set_f(void) {
 		cvar_t *var = cvar_find(cmd_argv[1]);
 		
 		if (var == NULL) {
-			con_printf("!could not find \"%s\"\n", cmd_argv[1]);
+			con_printf("!could not find \"%s\"!\n", cmd_argv[1]);
 			return;
 		}
 		

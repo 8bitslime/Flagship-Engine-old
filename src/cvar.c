@@ -1,4 +1,6 @@
 #include "cvar.h"
+#include "cmd.h"
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,23 @@ static unsigned long hash_str(const char *string) {
 
 static cvar_t *cvars = NULL;
 static cvar_t *cvars_map[MAX_BUCKETS] = {NULL};
+
+static void cvar_list(void) {
+	cvar_t *var = cvars;
+	
+	for (; var != NULL; var = var->next) {
+		con_printf("%s: %s\n", var->name, var->value);
+	}
+}
+
+static cmd_t cvars_list = {"cvars", cvar_list};
+
+static cvar_t shit = {"shit", "123"};
+
+void cvar_init(void) {
+	cmd_register(&cvars_list);
+	cvar_register(&shit);
+}
 
 void cvar_register(cvar_t *cvar) {
 	unsigned long hash = hash_str(cvar->name);

@@ -50,6 +50,7 @@ int main() {
 	
 	cmd_init();
 	con_init();
+	cvar_init();
 	
 	glfwInit();
 	GLFWwindow *window = glfwCreateWindow(650, 450, "Flagship Engine", NULL, NULL);
