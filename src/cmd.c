@@ -202,25 +202,6 @@ static void cmd_echo_f(void) {
 	con_print("\n");
 }
 
-static void cmd_set_f(void) {
-	if (cmd_argc == 1) {
-		con_printf("?set <cvar> <value>\n");
-	} else {
-		cvar_t *var = cvar_find(cmd_argv[1]);
-		
-		if (var == NULL) {
-			con_printf("!could not find \"%s\"!\n", cmd_argv[1]);
-			return;
-		}
-		
-		if (cmd_argc == 2) {
-			con_printf("%s: %s\n", var->name, var->value);
-		} else {
-			cvar_set(cmd_argv[1], cmd_argv[2]);
-		}
-	}
-}
-
 static void cmd_wait_f(void) {
 	command_buffer_wait = true;
 }
@@ -235,14 +216,12 @@ static void cmd_exec_f(void) {
 
 static cmd_t quit = {"quit", cmd_quit_f};
 static cmd_t echo = {"echo", cmd_echo_f};
-static cmd_t set  = {"set",  cmd_set_f};
 static cmd_t wait = {"wait", cmd_wait_f};
 static cmd_t exec = {"exec", cmd_exec_f};
 
 void cmd_init(void) {
 	cmd_register(&quit);
 	cmd_register(&echo);
-	cmd_register(&set);
 	cmd_register(&wait);
 	cmd_register(&exec);
 	

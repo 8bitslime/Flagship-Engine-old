@@ -20,21 +20,39 @@ static unsigned long hash_str(const char *string) {
 static cvar_t *cvars = NULL;
 static cvar_t *cvars_map[MAX_BUCKETS] = {NULL};
 
-static void cvar_list(void) {
+static void cmd_list_f(void) {
 	cvar_t *var = cvars;
 	
 	for (; var != NULL; var = var->next) {
-		con_printf("%s: %s\n", var->name, var->value);
+		con_printf("?%s: %s\n", var->name, var->value);
 	}
 }
 
-static cmd_t cvars_list = {"cvars", cvar_list};
+static void cmd_set_f(void) {
+	if (cmd_argc == 1) {
+		con_printf("?set <cvar> <value>\n");
+	} else {
+		cvar_t *var = cvar_find(cmd_argv[1]);
+		
+		if (var == NULL) {
+			con_printf("!could not find \"%s\"!\n", cmd_argv[1]);
+			return;
+		}
+		
+		if (cmd_argc == 2) {
+			con_printf("?%s: %s\n", var->name, var->value);
+		} else {
+			cvar_set(cmd_argv[1], cmd_argv[2]);
+		}
+	}
+}
 
-static cvar_t shit = {"shit", "123"};
+static cmd_t cmd_list = {"cvars", cmd_list_f};
+static cmd_t cmd_set  = {"set", cmd_set_f};
 
 void cvar_init(void) {
-	cmd_register(&cvars_list);
-	cvar_register(&shit);
+	cmd_register(&cmd_list);
+	cmd_register(&cmd_set);
 }
 
 void cvar_register(cvar_t *cvar) {

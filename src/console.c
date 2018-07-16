@@ -10,10 +10,6 @@
 #include <stdio.h>
 #include <GLFW/glfw3.h>
 
-#define MAX_INPUT_BUFFER 255
-static int  input_cursor = 0;
-static char input_buffer[MAX_INPUT_BUFFER + 1] = {0};
-
 #define MAX_CONSOLE_BUFFER 8192
 static buffer_t console_buffer;
 
@@ -23,20 +19,31 @@ static int console_backtrack = 0;
 static char console_lines[MAX_LINES][MAX_LINE_LENGTH];
 static int viewable_lines = MAX_LINES;
 
-static void con_clear(void) {
+#define MAX_COMMAND_HISTORY 30
+static int command_history_backtrack = 0;
+static int command_history_end = 0;
+static char command_history_buffer[MAX_COMMAND_HISTORY][MAX_LINE_LENGTH];
+
+static int  input_cursor = 0;
+static int  input_length = 0;
+
+static void cmd_clear_f(void) {
 	buffer_empty(&console_buffer);
 }
 
-static void con_cls(void) {
+static void cmd_cld_f(void) {
 	for (int i = 0; i < viewable_lines; i++) {
 		con_print("\n");
 	}
 }
 
-static cmd_t clear = {"clear", con_clear};
-static cmd_t cls   = {"cls", con_cls};
+static cvar_t echo = {"echo", "0", CVAR_INTEGER};
+
+static cmd_t clear = {"clear", cmd_clear_f};
+static cmd_t cls   = {"cls", cmd_cld_f};
 
 void con_init(void) {
+	cvar_register(&echo);
 	cmd_register(&clear);
 	cmd_register(&cls);
 	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER);
@@ -97,38 +104,109 @@ void con_draw(int w, int h) {
 		text_setColor(1, 1, 1);
 	}
 	
+	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
 	
 	if (sin(glfwGetTime() * 4) > 0 ) {
-		text_draw("\xDD", (float)strlen(input_buffer) + 1.8f, (float)viewable_lines);
+		text_draw("\xDD", (float)input_cursor + 2, (float)viewable_lines);
 	}
 	text_draw("\xAF", 0, (float)viewable_lines);
-	text_draw(input_buffer, 1.5f, (float)viewable_lines);
+	text_draw(input_buffer, 2, (float)viewable_lines);
 }
 
 static void con_exec_input(void) {
+	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	
+	if (echo.ival) {
+		con_printf("?\xAF %s\n", input_buffer);
+	}
+	
+	if (strlen(input_buffer) == 0) {
+		return;
+	}
+	
 	cmd_addString(input_buffer);
 	input_cursor = 0;
-	memset(input_buffer, 0, MAX_INPUT_BUFFER);
+	input_length = 0;
+	
+	int current = command_history_end % MAX_COMMAND_HISTORY;
+	
+	if (command_history_backtrack < command_history_end - 1) {
+		memcpy(command_history_buffer[current], input_buffer, MAX_LINE_LENGTH);
+		command_history_end++;
+	} else if (command_history_backtrack == command_history_end - 1) {
+		memset(command_history_buffer[current], 0, MAX_LINE_LENGTH);
+	} else {
+		int history_next = ++command_history_end % MAX_COMMAND_HISTORY;
+		memset(command_history_buffer[history_next], 0, MAX_LINE_LENGTH);
+	}
+	
+	command_history_backtrack = command_history_end;
 }
 
 void con_input(char c) {
 	console_backtrack = 0;
+	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	
+	char temp[MAX_LINE_LENGTH];
+	memcpy(temp, input_buffer + input_cursor, max(input_length - input_cursor, 1));
 	
 	if (c == '\n') {
 		con_exec_input();
 		return;
 	} else if (c == '\b') {
-		if (input_cursor) {
-			input_buffer[--input_cursor] = '\0';
+		if (input_cursor && input_length) {
+			memcpy(input_buffer + input_cursor - 1, temp, input_length - input_cursor + 1);
+			input_cursor--;
+			input_length--;
 		}
 		return;
 	}
 	
-	if (input_cursor >= MAX_INPUT_BUFFER) {
+	if (input_length >= MAX_LINE_LENGTH) {
 		return;
 	}
 	
+	memcpy(input_buffer + input_cursor + 1, temp, input_length - input_cursor);
 	input_buffer[input_cursor++] = c;
+	input_length++;
+}
+
+void con_historyUp(void) {
+	command_history_backtrack = max(command_history_backtrack - 1, 0);
+	
+	int end = command_history_end % MAX_COMMAND_HISTORY;
+	int back = command_history_backtrack % MAX_COMMAND_HISTORY;
+	
+	if (back == end) {
+		command_history_backtrack++;
+	}
+	
+	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	input_length = strlen(input_buffer);
+	input_cursor = input_length;
+}
+
+void con_historyDown(void) {
+	command_history_backtrack = min(command_history_backtrack + 1, command_history_end);
+	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	input_length = strlen(input_buffer);
+	input_cursor = input_length;
+}
+
+void con_cursorLeft(void) {
+	input_cursor = max(input_cursor - 1, 0);
+}
+
+void con_cursorRight(void) {
+	input_cursor = min(input_cursor + 1, input_length);
+}
+
+void con_cursorHome(void) {
+	input_cursor = 0;
+}
+
+void con_cursorEnd(void) {
+	input_cursor = input_length;
 }
 
 void con_print(const char *string) {
