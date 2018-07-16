@@ -15,6 +15,10 @@ extern char *cmd_argv[MAX_ARGV];
 void cmd_register(cmd_t *cmd);
 cmd_t *cmd_find(const char *name);
 
+void cmd_addString(const char *string);
+void cmd_execBuffer(void);
+
+void cmd_execFile(const char *fileName);
 void cmd_exec(const char *command);
 void cmd_tokenize(char *string);
 

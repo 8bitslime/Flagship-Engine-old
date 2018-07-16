@@ -1,3 +1,4 @@
+#include "flagship.h"
 #include "text.h"
 #include "texture.h"
 #include "cvar.h"
@@ -11,17 +12,32 @@
 
 cvar_t hello = {"hello", "13"};
 
+static bool_t console = false;
+
 void input_char(GLFWwindow *window, unsigned int c) {
-	con_input(c);
+	if (c == '`' || c == '~') {
+		return;
+	}
+	
+	if (console) {
+		con_input(c);
+	}
 }
 
 void input_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
-	if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-		switch (key) {
-			case GLFW_KEY_BACKSPACE: con_input('\b'); break;
-			case GLFW_KEY_ENTER:     con_input('\n'); break;
-			case GLFW_KEY_PAGE_UP:   con_seekUp();    break;
-			case GLFW_KEY_PAGE_DOWN: con_seekDown();  break;
+	if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
+		console = !console;
+		return;
+	}
+	
+	if (console) {
+		if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+			switch (key) {
+				case GLFW_KEY_BACKSPACE: con_input('\b'); break;
+				case GLFW_KEY_ENTER:     con_input('\n'); break;
+				case GLFW_KEY_PAGE_UP:   con_seekUp();    break;
+				case GLFW_KEY_PAGE_DOWN: con_seekDown();  break;
+			}
 		}
 	}
 }
@@ -33,13 +49,7 @@ void resize(GLFWwindow *window, int w, int h) {
 int main() {
 	
 	cmd_init();
-	// cvar_register(&hello);
-	
-	// while (1) {
-	// 	char buffer[1024];
-	// 	gets_s(buffer, 1024);
-	// 	cmd_exec(buffer);
-	// }
+	con_init();
 	
 	glfwInit();
 	GLFWwindow *window = glfwCreateWindow(650, 450, "Flagship Engine", NULL, NULL);
@@ -50,25 +60,21 @@ int main() {
 	glfwSetKeyCallback(window, input_key);
 	
 	gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-	glClearColor(0.2f, 0.2f, 0.2f, 1);
+	glClearColor(0.1f, 0.1f, 0.1f, 1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	texture_t t = texture_load("res/font.bmp");
+	con_printf("%s\n", glGetString(GL_RENDERER));
 	
-	con_init();
+	texture_t t = texture_load("res/terminal16x16.png");
 	text_init();
 	
 	mesh_t mesh;
 	mesh_createStatic(&mesh, 2);
 	mesh_floatBufferData(&mesh, 0, 3, 3, (float[]){
 		0, 1, 0,
-		1, -1, 0,
-		-1, -1, 0
-	});
-	
-	mesh_elementBufferData(&mesh, 1, 3, (unsigned int[]) {
-		0, 1, 2
+		-1, -1, 0,
+		1, -1, 0
 	});
 	
 	glEnable(GL_CULL_FACE);
@@ -76,18 +82,27 @@ int main() {
 	glFrontFace(GL_CCW);
 	
 	while (!glfwWindowShouldClose(window)) {
+		cmd_execBuffer();
+		
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
 		
-		glUseProgram(0);
-		mesh_draw(&mesh, 3, 0);
+		// glUseProgram(0);
+		// mesh_draw(&mesh, 3, 0);
 		
-		text_bind(t);
-		con_draw(0, 0);
+		if (console) {
+			int w, h;
+			glfwGetWindowSize(window, &w, &h);
+			
+			text_begin(t, w, h);
+			con_draw(w, h);
+		}
 		
 		glfwSwapBuffers(window);
 	}
 	
+	mesh_free(&mesh);
+	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
 }

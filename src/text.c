@@ -1,5 +1,5 @@
 #include "text.h"
-#include "texture.h"
+#include "cvar.h"
 #include "shader.h"
 #include <glad/glad.h>
 #include <cglm/cglm.h>
@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_INSTANCE_COUNT 128
 typedef struct {
 	vec2 character;
 	vec2 position;
@@ -19,6 +20,7 @@ static program_t text_program;
 static uniform_t text_uniform_matrix;
 static uniform_t text_uniform_char;
 static uniform_t text_uniform_pos;
+static uniform_t text_uniform_color;
 
 int text_init(void) {
 	//TODO: better file loading
@@ -52,7 +54,7 @@ int text_init(void) {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*2, NULL);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, text_vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t)*128, NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * MAX_INSTANCE_COUNT, NULL, GL_STREAM_DRAW);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(character_t), (void*)0);
@@ -63,6 +65,7 @@ int text_init(void) {
 	text_uniform_matrix = glGetUniformLocation(text_program, "ortho");
 	text_uniform_char   = glGetUniformLocation(text_program, "character");
 	text_uniform_pos    = glGetUniformLocation(text_program, "position");
+	text_uniform_color  = glGetUniformLocation(text_program, "color");
 	
 	return 0;
 }
@@ -73,24 +76,24 @@ void text_free(void) {
 	glDeleteVertexArrays(1, &text_vao);
 }
 
-void text_bind(GLuint texture) {
+void text_begin(GLuint texture, int w, int h) {
 	glUseProgram(text_program);
 	glBindVertexArray(text_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, text_vbo[1]);
 	texture_bind(texture, 0);
 	
 	mat4 ortho;
-	glm_ortho(0, 650, 450, 0, -1, 1, ortho);
+	glm_ortho(0, w, h, 0, -1, 1, ortho);
 	glUniformMatrix4fv(text_uniform_matrix, 1, GL_FALSE, (float*)ortho);
 }
 void text_draw(const char *string, float x, float y) {
 	vec2 cursor = {0, 0};
-	character_t buffer[128];
+	character_t buffer[MAX_INSTANCE_COUNT];
 	
 	const char *c = string;
 	while (*c != '\0') {
 		int i;
-		for (i = 0; *c && (i < 128); c++, i++) {
+		for (i = 0; *c && (i < MAX_INSTANCE_COUNT); c++) {
 			if (*c == '\n') {
 				cursor[0] = 0;
 				cursor[1]++;
@@ -100,12 +103,13 @@ void text_draw(const char *string, float x, float y) {
 				continue;
 			}
 			
-			float col = (float)(*c % 16);
-			float row = (float)(*c / 16);
+			unsigned char uc = (unsigned char)*c;
+			float col = (float)(uc % 16);
+			float row = (float)(uc / 16);
 			
-			buffer[i] = (character_t){
+			buffer[i++] = (character_t){
 				{col, row},
-				{(cursor[0] + x) * 16, (cursor[1] + y) * 16}
+				{(cursor[0] + x) * 12, (cursor[1] + y) * 16}
 			};
 			
 			cursor[0]++;
@@ -113,4 +117,8 @@ void text_draw(const char *string, float x, float y) {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(character_t)*i, buffer);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, i);
 	}
+}
+
+void text_setColor(float r, float g, float b) {
+	glUniform3f(text_uniform_color, r, g, b);
 }

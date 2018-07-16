@@ -1,5 +1,7 @@
 #include "cmd.h"
+#include "flagship.h"
 #include "cvar.h"
+#include "buffer.h"
 #include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +11,9 @@
 
 int cmd_argc = 0;
 char *cmd_argv[MAX_ARGV] = {NULL};
+
+#define MAX_COMMAND_BUFFER 8192
+static buffer_t command_buffer;
 
 static unsigned long hash_str(const char *string) {
 	unsigned long out = 5381, c;
@@ -54,40 +59,89 @@ cmd_t *cmd_find(const char *name) {
 	return var;
 }
 
-void cmd_exec(const char *command) {
-	char buffer[1024];
-	strncpy(buffer, command, 1023);
-	char *runner = buffer;
+void cmd_addString(const char *string) {
+	size_t length = strlen(string);
+	char *buffer = buffer_getSpace(&command_buffer, length + 1);
 	
-	while (*runner) {
-		int i, quotes = 0;
-		for (i = 0; runner[i]; i++) {
-			if (runner[i] == '"') {
-				quotes = !quotes;
-			} else if (runner[i] == ';' && !quotes) {
-				runner[i] = '\0';
-				break;
-			}
-		}
-		cmd_tokenize(runner);
-		runner += i + 1;
+	if (buffer == NULL) {
+		con_print("COMMAND BUFFER OVERFLOW!\n");
+		return;
+	}
+	
+	memcpy(buffer, string, length);
+	buffer[length] = '\n';
+}
+
+static bool_t command_buffer_wait = false;
+
+void cmd_execBuffer(void) {
+	char *buffer = (char*)command_buffer.data;
+	char line[1024];
+	int i = 0, start = 0;
+	
+	while (i < command_buffer.size) {
 		
-		if (!cmd_argc) {
+		if (command_buffer_wait) {
+			memcpy(buffer, buffer + i, command_buffer.size - i);
+			command_buffer.size -= i;
+			command_buffer_wait = false;
 			return;
 		}
 		
-		cvar_t *cvar;
-		cmd_t *cmd;
-		
-		if ((cvar = cvar_find(cmd_argv[0]))) {
-			if (cmd_argc == 1) {
-				printf("%s\n", cvar->value);
-			} else {
-				cvar_setc(cvar, cmd_argv[1]);
+		bool_t quotes = false;
+		for (; i < command_buffer.size; i++) {
+			if (buffer[i] == '"') {
+				quotes = !quotes;
+			} else if (buffer[i] == ';' && !quotes){
+				break;
+			} else if (buffer[i] == '\n') {
+				break;
 			}
-		} else if ((cmd = cmd_find(cmd_argv[0]))) {
-			cmd->func();
 		}
+		
+		memcpy(line, buffer + start, i - start);
+		line[i - start] = '\0';
+		cmd_exec(line);
+		
+		start = ++i;
+	}
+	
+	buffer_empty(&command_buffer);
+}
+
+void cmd_execFile(const char *fileName) {
+	FILE *file = fopen(fileName, "r");
+	
+	if (file == NULL) {
+		con_printf("!could not open file %s!\n", fileName);
+	}
+	
+	fseek(file, 0, SEEK_END);
+	unsigned long length = ftell(file);
+	rewind(file);
+	
+	char *buffer = malloc(length + 1);
+	fread(buffer, sizeof(char), length, file);
+	buffer[length] = '\0';
+	
+	cmd_addString(buffer);
+	free(buffer);
+}
+
+void cmd_exec(const char *command) {
+	char buffer[1024];
+	strncpy(buffer, command, 1024);
+	
+	cmd_tokenize(buffer);
+		
+	if (!cmd_argc) {
+		return;
+	}
+		
+	cmd_t *cmd = cmd_find(cmd_argv[0]);
+	
+	if (cmd != NULL) {
+		cmd->func();
 	}
 }
 
@@ -136,21 +190,60 @@ void cmd_tokenize(char *buffer) {
 	}
 }
 
-static void cmd_quit(void) {
+static void cmd_quit_f(void) {
 	exit(0);
 }
 
-static void cmd_echo(void) {
+static void cmd_echo_f(void) {
 	for (int i = 1; i < cmd_argc; i++) {
 		con_printf("%s ", cmd_argv[i]);
 	}
 	con_print("\n");
 }
 
-static cmd_t quit = {"quit", cmd_quit};
-static cmd_t echo = {"echo", cmd_echo};
+static void cmd_set_f(void) {
+	if (cmd_argc == 1) {
+		con_printf("?set <cvar> <value>\n");
+	} else {
+		cvar_t *var = cvar_find(cmd_argv[1]);
+		
+		if (var == NULL) {
+			con_printf("!could not find \"%s\"\n", cmd_argv[1]);
+			return;
+		}
+		
+		if (cmd_argc == 2) {
+			con_printf("%s: %s\n", var->name, var->value);
+		} else {
+			cvar_set(cmd_argv[1], cmd_argv[2]);
+		}
+	}
+}
+
+static void cmd_wait_f(void) {
+	command_buffer_wait = true;
+}
+
+static void cmd_exec_f(void) {
+	if (cmd_argc < 2) {
+		con_print("?exec <file name>\n");
+	} else {
+		cmd_execFile(cmd_argv[1]);
+	}
+}
+
+static cmd_t quit = {"quit", cmd_quit_f};
+static cmd_t echo = {"echo", cmd_echo_f};
+static cmd_t set  = {"set",  cmd_set_f};
+static cmd_t wait = {"wait", cmd_wait_f};
+static cmd_t exec = {"exec", cmd_exec_f};
 
 void cmd_init(void) {
 	cmd_register(&quit);
 	cmd_register(&echo);
+	cmd_register(&set);
+	cmd_register(&wait);
+	cmd_register(&exec);
+	
+	buffer_alloc(&command_buffer, MAX_COMMAND_BUFFER);
 }

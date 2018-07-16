@@ -2,7 +2,7 @@
 #include <memory.h>
 
 void buffer_alloc(buffer_t *dest, size_t size) {
-	void *data = calloc(size, 1);
+	void *data = malloc(size);
 	if (data == NULL) {
 		dest->data = NULL;
 		dest->cap = 0;
@@ -29,6 +29,6 @@ void *buffer_getSpace(buffer_t *buffer, size_t size) {
 	}
 }
 void buffer_empty(buffer_t *buffer) {
-	memset(buffer->data, 0, buffer->cap);
+	// memset(buffer->data, 0, buffer->cap);
 	buffer->size = 0;
 }
