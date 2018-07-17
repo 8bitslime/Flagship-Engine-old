@@ -1,7 +1,12 @@
 #pragma once
+#include "flagship.h"
+
+extern bool_t console_open;
+extern double console_time;
+void con_toggle(void);
 
 void con_init(void);
-void con_draw(int w, int h, float time);
+void con_draw();
 
 void con_input(char c);
 void con_historyUp(void);

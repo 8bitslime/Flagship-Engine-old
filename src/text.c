@@ -1,7 +1,7 @@
 #include "text.h"
 #include "cvar.h"
+#include "window.h"
 #include "shader.h"
-#include <glad/glad.h>
 #include <cglm/cglm.h>
 
 #include <stdio.h>
@@ -77,14 +77,14 @@ void text_free(void) {
 	glDeleteVertexArrays(1, &text_vao);
 }
 
-void text_begin(GLuint texture, int w, int h) {
+void text_begin(GLuint texture) {
 	glUseProgram(text_program);
 	glBindVertexArray(text_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, text_vbo[1]);
 	texture_bind(texture, 0);
 	
 	mat4 ortho;
-	glm_ortho(0, w, h, 0, -1, 1, ortho);
+	glm_ortho(0, window_width, window_height, 0, -1, 1, ortho);
 	glUniformMatrix4fv(text_uniform_matrix, 1, GL_FALSE, (float*)ortho);
 }
 void text_draw(const char *string, float x, float y) {

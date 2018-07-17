@@ -1,14 +1,13 @@
 #include "console.h"
-#include "flagship.h"
 #include "cvar.h"
 #include "cmd.h"
+#include "window.h"
 #include "text.h"
 #include "buffer.h"
 #include <math.h>
 #include <memory.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 
 #define MAX_CONSOLE_BUFFER 8192
@@ -27,6 +26,14 @@ static char command_history_buffer[MAX_COMMAND_HISTORY][MAX_LINE_LENGTH];
 
 static int input_cursor = 0;
 static int input_length = 0;
+
+bool_t console_open;
+double console_time;
+
+void con_toggle(void) {
+	console_open = !console_open;
+	console_time = glfwGetTime();
+}
 
 static void cmd_clear_f(void) {
 	buffer_empty(&console_buffer);
@@ -57,8 +64,8 @@ void con_init(void) {
 	cmd_register(&cls);
 }
 
-void con_draw(int w, int h, float time) {
-	viewable_lines = min(h / 38, MAX_LINES);
+void con_draw() {
+	viewable_lines = min(window_height / 38, MAX_LINES);
 	
 	for (int i = 0; i < MAX_LINES; i++) {
 		memset(console_lines[i], 0, MAX_LINE_LENGTH);
@@ -107,8 +114,8 @@ void con_draw(int w, int h, float time) {
 		}
 	}
 	
-	float curTime = glfwGetTime() - time;
-	curTime = max(viewable_lines - (glm_ease_bounce_out(curTime * 1) * viewable_lines), 0);
+	float curTime = glfwGetTime() - console_time;
+	curTime = max(viewable_lines + 1 - (glm_ease_bounce_out(curTime * 1) * (viewable_lines + 1)), 0);
 	
 	text_setColor(console_r.fval, console_g.fval, console_b.fval);
 	for (int i = 0; i < viewable_lines; i++) {
@@ -125,7 +132,7 @@ void con_draw(int w, int h, float time) {
 	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
 	
 	if (sin(glfwGetTime() * 5) > 0 ) {
-		text_draw("\xDD", (float)input_cursor + 2, (float)viewable_lines - curTime);
+		text_draw("\xDD", (float)input_cursor + 2.2f, (float)viewable_lines - curTime);
 	}
 	text_draw("\xAF", 0, (float)viewable_lines - curTime);
 	text_draw(input_buffer, 2, (float)viewable_lines - curTime);

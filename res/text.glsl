@@ -1,10 +1,10 @@
 
 #ifdef VERTEX
 
-in vec2 pos;
-out vec2 uv;
+layout (location = 0) in vec2 pos;
 layout (location = 1) in vec2 character;
 layout (location = 2) in vec2 position;
+out vec2 uv;
 uniform mat4 ortho;
 
 void main() {

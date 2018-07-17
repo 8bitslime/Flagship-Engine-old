@@ -3,6 +3,7 @@
 #include "cvar.h"
 #include "buffer.h"
 #include "console.h"
+#include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -189,7 +190,7 @@ void cmd_tokenize(char *buffer) {
 }
 
 static void cmd_quit_f(void) {
-	exit(0);
+	glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
 static void cmd_echo_f(void) {
