@@ -22,8 +22,9 @@ uniform vec3 color;
 out vec4 out_color;
 
 void main() {
-	vec4 sample = texture(font, uv) * vec4(color, 1);
-	out_color = mix(vec4(sample.rgb,0), sample, sample.r * 2);
+	vec4 sample = texture(font, uv);
+	vec4 textColor = sample * vec4(color.rgb, 1);
+	out_color = mix(vec4(textColor.rgb, 0), textColor, sample.r * 2);
 }
 
 #endif

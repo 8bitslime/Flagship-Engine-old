@@ -1,7 +1,7 @@
 #pragma once
 
 void con_init(void);
-void con_draw(int w, int h);
+void con_draw(int w, int h, float time);
 
 void con_input(char c);
 void con_historyUp(void);

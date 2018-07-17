@@ -10,6 +10,7 @@
 #include <string.h>
 #include <GLFW/glfw3.h>
 
+static float console_time = 0.f;
 static bool_t console = false;
 
 void input_char(GLFWwindow *window, unsigned int c) {
@@ -25,6 +26,7 @@ void input_char(GLFWwindow *window, unsigned int c) {
 void input_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
 		console = !console;
+		console_time = glfwGetTime();
 		return;
 	}
 	
@@ -70,6 +72,9 @@ int main() {
 	glClearColor(0.1f, 0.1f, 0.1f, 1);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	
 	con_printf("GL driver: %s\n", glGetString(GL_RENDERER));
 	
@@ -83,10 +88,6 @@ int main() {
 		-1, -1, 0,
 		1, -1, 0
 	});
-	
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
 	
 	while (!glfwWindowShouldClose(window)) {
 		cmd_execBuffer();
@@ -102,7 +103,7 @@ int main() {
 			glfwGetWindowSize(window, &w, &h);
 			
 			text_begin(t, w, h);
-			con_draw(w, h);
+			con_draw(w, h, console_time);
 		}
 		
 		glfwSwapBuffers(window);

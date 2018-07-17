@@ -124,6 +124,7 @@ void cmd_execFile(const char *fileName) {
 	char *buffer = malloc(length + 1);
 	fread(buffer, sizeof(char), length, file);
 	buffer[length] = '\0';
+	fclose(file);
 	
 	cmd_addString(buffer);
 	free(buffer);
@@ -150,9 +151,6 @@ void cmd_tokenize(char *buffer) {
 	for (;cmd_argc;) {
 		cmd_argv[--cmd_argc] = NULL;
 	}
-	
-	// char buffer[1024] = {0};
-	// strncpy(buffer, string, 1023);
 	char *runner = buffer;
 	
 	int quotes = 0;
@@ -162,7 +160,6 @@ void cmd_tokenize(char *buffer) {
 			while (*runner == ' ' && !quotes) {
 				runner++;
 			}
-			
 			if (runner[i] == '"') {
 				if (quotes) {
 					quotes = !quotes;

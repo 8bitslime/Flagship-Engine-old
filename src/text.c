@@ -34,6 +34,7 @@ int text_init(void) {
 	}
 	fread(shader, sizeof(char), length, file);
 	shader[length] = '\0';
+	fclose(file);
 	
 	text_program = program_create(shader);
 	

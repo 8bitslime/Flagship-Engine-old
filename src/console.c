@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <GLFW/glfw3.h>
+#include <cglm/cglm.h>
 
 #define MAX_CONSOLE_BUFFER 8192
 static buffer_t console_buffer;
@@ -24,8 +25,8 @@ static int command_history_backtrack = 0;
 static int command_history_end = 0;
 static char command_history_buffer[MAX_COMMAND_HISTORY][MAX_LINE_LENGTH];
 
-static int  input_cursor = 0;
-static int  input_length = 0;
+static int input_cursor = 0;
+static int input_length = 0;
 
 static void cmd_clear_f(void) {
 	buffer_empty(&console_buffer);
@@ -39,17 +40,24 @@ static void cmd_cld_f(void) {
 
 static cvar_t echo = {"echo", "0", CVAR_INTEGER};
 
+static cvar_t console_r = {"console_r", "1"};
+static cvar_t console_g = {"console_g", "1"};
+static cvar_t console_b = {"console_b", "1"};
+
 static cmd_t clear = {"clear", cmd_clear_f};
 static cmd_t cls   = {"cls", cmd_cld_f};
 
 void con_init(void) {
+	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER);
 	cvar_register(&echo);
+	cvar_register(&console_r);
+	cvar_register(&console_g);
+	cvar_register(&console_b);
 	cmd_register(&clear);
 	cmd_register(&cls);
-	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER);
 }
 
-void con_draw(int w, int h) {
+void con_draw(int w, int h, float time) {
 	viewable_lines = min(h / 38, MAX_LINES);
 	
 	for (int i = 0; i < MAX_LINES; i++) {
@@ -67,13 +75,19 @@ void con_draw(int w, int h) {
 	int line = viewable_lines-1;
 	for (int i = size, end = size; line >= 0; i--) {
 		if (i <= 0) {
-			memcpy(console_lines[line], buffer, end + 1);
-			console_lines[line][end + 1] = '\0';
 			console_backtrack -= backtrack;
+			if (*buffer != '\xAF' || echo.ival) {
+				memcpy(console_lines[line], buffer, end + 1);
+				console_lines[line][end + 1] = '\0';
+			}
 			break;
 		} else if (buffer[i] == '\n') {
 			int length = end - i;
 			end = i - 1;
+			
+			if (*(buffer + i + 1) == '\xAF' && !echo.ival) {
+				continue;
+			}
 			
 			if (backtrack) {
 				backtrack--;
@@ -93,32 +107,33 @@ void con_draw(int w, int h) {
 		}
 	}
 	
-	text_setColor(1, 1, 1);
+	float curTime = glfwGetTime() - time;
+	curTime = max(viewable_lines - (glm_ease_bounce_out(curTime * 1) * viewable_lines), 0);
+	
+	text_setColor(console_r.fval, console_g.fval, console_b.fval);
 	for (int i = 0; i < viewable_lines; i++) {
 		char *line = console_lines[i];
 		switch (*line) {
-			case '!' : text_setColor(1, 0, 0); line++; break;
-			case '?' : text_setColor(0.6f, 0.6f, 0.6f); line++; break;
+			case '!'    : text_setColor(1, 0, 0); line++; break;
+			case '\xAF' : line--;
+			case '?'    : text_setColor(0.6f, 0.6f, 0.6f); line++; break;
 		}
-		text_draw(line, 0, (float)i);
-		text_setColor(1, 1, 1);
+		text_draw(line, 0, (float)i - curTime);
+		text_setColor(console_r.fval, console_g.fval, console_b.fval);
 	}
 	
-	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
 	
-	if (sin(glfwGetTime() * 4) > 0 ) {
-		text_draw("\xDD", (float)input_cursor + 2, (float)viewable_lines);
+	if (sin(glfwGetTime() * 5) > 0 ) {
+		text_draw("\xDD", (float)input_cursor + 2, (float)viewable_lines - curTime);
 	}
-	text_draw("\xAF", 0, (float)viewable_lines);
-	text_draw(input_buffer, 2, (float)viewable_lines);
+	text_draw("\xAF", 0, (float)viewable_lines - curTime);
+	text_draw(input_buffer, 2, (float)viewable_lines - curTime);
 }
 
 static void con_exec_input(void) {
-	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
-	
-	if (echo.ival) {
-		con_printf("?\xAF %s\n", input_buffer);
-	}
+	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
+	con_printf("\xAF %s\n", input_buffer);
 	
 	if (strlen(input_buffer) == 0) {
 		return;
@@ -128,16 +143,15 @@ static void con_exec_input(void) {
 	input_cursor = 0;
 	input_length = 0;
 	
-	int current = command_history_end % MAX_COMMAND_HISTORY;
+	int last = (command_history_end - 1) % MAX_COMMAND_HISTORY;
+	int current = command_history_backtrack % MAX_COMMAND_HISTORY;
+	char *previous = command_history_buffer[(command_history_end - 1) % MAX_COMMAND_HISTORY];
 	
-	if (command_history_backtrack < command_history_end - 1) {
-		memcpy(command_history_buffer[current], input_buffer, MAX_LINE_LENGTH);
-		command_history_end++;
-	} else if (command_history_backtrack == command_history_end - 1) {
-		memset(command_history_buffer[current], 0, MAX_LINE_LENGTH);
+	if (strcmp(input_buffer, previous) == 0 && current == last) {
+		memset(input_buffer, 0, MAX_LINE_LENGTH);
 	} else {
-		int history_next = ++command_history_end % MAX_COMMAND_HISTORY;
-		memset(command_history_buffer[history_next], 0, MAX_LINE_LENGTH);
+		int next = ++command_history_end % MAX_COMMAND_HISTORY;
+		memset(command_history_buffer[next], 0, MAX_LINE_LENGTH);
 	}
 	
 	command_history_backtrack = command_history_end;
@@ -145,7 +159,7 @@ static void con_exec_input(void) {
 
 void con_input(char c) {
 	console_backtrack = 0;
-	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
 	
 	char temp[MAX_LINE_LENGTH];
 	memcpy(temp, input_buffer + input_cursor, max(input_length - input_cursor, 1));
@@ -181,14 +195,31 @@ void con_historyUp(void) {
 		command_history_backtrack++;
 	}
 	
-	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	char *input_buffer = command_history_buffer[end];
+	char *history_select = command_history_buffer[back];
+	
+	memcpy(input_buffer, history_select, MAX_LINE_LENGTH);
+	
 	input_length = strlen(input_buffer);
 	input_cursor = input_length;
 }
 
 void con_historyDown(void) {
 	command_history_backtrack = min(command_history_backtrack + 1, command_history_end);
-	char *input_buffer = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	
+	char *history_select = command_history_buffer[command_history_backtrack % MAX_COMMAND_HISTORY];
+	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
+	
+	if (command_history_backtrack >= command_history_end) {
+		memset(input_buffer, 0, MAX_LINE_LENGTH);
+		command_history_backtrack = command_history_end;
+		input_length = 0;
+		input_cursor = 0;
+		return;
+	}
+	
+	memcpy(input_buffer, history_select, MAX_LINE_LENGTH);
+	
 	input_length = strlen(input_buffer);
 	input_cursor = input_length;
 }
