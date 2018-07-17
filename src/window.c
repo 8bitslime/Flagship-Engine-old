@@ -24,6 +24,10 @@ int window_create(const char *title, int w, int h) {
 		return -1;
 	}
 	
+	glfwDefaultWindowHints();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	
 	window = glfwCreateWindow(w, h, title, NULL, NULL);
 	window_width = w;
 	window_height = h;

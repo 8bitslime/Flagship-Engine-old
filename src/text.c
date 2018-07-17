@@ -26,7 +26,7 @@ int text_init(void) {
 	//TODO: better file loading
 	char shader[1024];
 	FILE *file = fopen("res/text.glsl", "rb");
-	fseek(file, 0, FILE_END);
+	fseek(file, 0, SEEK_END);
 	GLuint length = ftell(file);
 	rewind(file);
 	if (file == NULL) {
