@@ -18,6 +18,7 @@ src/shader.c
 src/text.c
 src/texture.c
 src/window.c
+src/objloader.c
 libs/glad/src/glad.c
 )
 

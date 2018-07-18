@@ -51,6 +51,8 @@ int window_create(const char *title, int w, int h) {
 	
 	//set up OpenGL
 	//TODO: make this a seperate function
+	glEnable(GL_DEPTH_TEST);
+	
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	

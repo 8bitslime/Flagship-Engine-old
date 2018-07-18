@@ -45,23 +45,32 @@ static void cmd_cld_f(void) {
 	}
 }
 
-static cvar_t echo = {"echo", "0", CVAR_INTEGER};
+static float r = 1, g = 1, b = 1;
 
-static cvar_t console_r = {"console_r", "1"};
-static cvar_t console_g = {"console_g", "1"};
-static cvar_t console_b = {"console_b", "1"};
+static void cmd_color_f(void) {
+	if (cmd_argc == 1) {
+		r = g = b = 1;
+	} else if (cmd_argc == 4) {
+		r = strtof(cmd_argv[1], NULL);
+		g = strtof(cmd_argv[2], NULL);
+		b = strtof(cmd_argv[3], NULL);
+	} else {
+		con_printf("?color <r> <g> <b>\n");
+	}
+}
+
+static cvar_t echo = {"echo", "0", CVAR_INTEGER};
 
 static cmd_t clear = {"clear", cmd_clear_f};
 static cmd_t cls   = {"cls", cmd_cld_f};
+static cmd_t color = {"color", cmd_color_f};
 
 void con_init(void) {
 	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER);
 	cvar_register(&echo);
-	cvar_register(&console_r);
-	cvar_register(&console_g);
-	cvar_register(&console_b);
 	cmd_register(&clear);
 	cmd_register(&cls);
+	cmd_register(&color);
 }
 
 void con_draw() {
@@ -117,7 +126,7 @@ void con_draw() {
 	float curTime = glfwGetTime() - console_time;
 	curTime = max(viewable_lines + 1 - (glm_ease_bounce_out(curTime * 1) * (viewable_lines + 1)), 0);
 	
-	text_setColor(console_r.fval, console_g.fval, console_b.fval);
+	text_setColor(r, g, b);
 	for (int i = 0; i < viewable_lines; i++) {
 		char *line = console_lines[i];
 		switch (*line) {
@@ -126,7 +135,7 @@ void con_draw() {
 			case '?'    : text_setColor(0.6f, 0.6f, 0.6f); line++; break;
 		}
 		text_draw(line, 0, (float)i - curTime);
-		text_setColor(console_r.fval, console_g.fval, console_b.fval);
+		text_setColor(r, g, b);
 	}
 	
 	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
@@ -139,6 +148,7 @@ void con_draw() {
 }
 
 static void con_exec_input(void) {
+	console_backtrack = 0;
 	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
 	con_printf("\xAF %s\n", input_buffer);
 	
@@ -165,7 +175,6 @@ static void con_exec_input(void) {
 }
 
 void con_input(char c) {
-	console_backtrack = 0;
 	char *input_buffer = command_history_buffer[command_history_end % MAX_COMMAND_HISTORY];
 	
 	char temp[MAX_LINE_LENGTH];
