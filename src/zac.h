@@ -225,7 +225,7 @@ zac_gl_obj *zac_gl_parseObjb(const char *buffer, int length) Z({
 				end = i - 1;
 				int length = end - begin;
 				
-				curObj->name = zac_malloc(sizeof(char) * length);
+				curObj->name = zac_malloc(sizeof(char) * length + 1);
 				
 				if (curObj->name != NULL) {
 					strncpy(curObj->name, buffer + begin, length);

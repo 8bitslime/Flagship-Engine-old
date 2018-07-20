@@ -111,6 +111,7 @@ void cmd_execBuffer(void) {
 }
 
 void cmd_execFile(const char *fileName) {
+	//TODO: replace with asset manager
 	FILE *file = fopen(fileName, "r");
 	
 	if (file == NULL) {
@@ -223,5 +224,10 @@ void cmd_init(void) {
 	cmd_register(&wait);
 	cmd_register(&exec);
 	
-	buffer_alloc(&command_buffer, MAX_COMMAND_BUFFER);
+	buffer_alloc(&command_buffer, MAX_COMMAND_BUFFER, NULL);
+	
+	if (command_buffer.cap != MAX_COMMAND_BUFFER) {
+		FATAL_ERROR("could not allocate command buffer");
+		return;
+	}
 }

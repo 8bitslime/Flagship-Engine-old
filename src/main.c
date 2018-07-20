@@ -1,4 +1,5 @@
 #include "flagship.h"
+#include "arena.h"
 #include "cvar.h"
 #include "cmd.h"
 #include "console.h"
@@ -19,6 +20,9 @@
 static cvar_t fov = {"fov", "90"};
 
 int main() {
+	//initialize default arena
+	arena_alloc(&arena_default, 1024 * 1024);
+	
 	cmd_init();
 	con_init();
 	cvar_init();
@@ -58,7 +62,7 @@ int main() {
 	mesh_floatBufferData(&mesh, 1, 3, verts, (float*)obj->normals);
 	mesh_floatBufferData(&mesh, 2, 2, verts, (float*)obj->uvs);
 	
-	// zac_gl_freeObj(obj);
+	zac_gl_freeObj(obj);
 	
 	while (!window_shouldClose()) {
 		window_pollEvents();
@@ -70,7 +74,7 @@ int main() {
 		glUseProgram(shader);
 		
 		versor quat;
-		glm_quat(quat, glm_rad(sin(glfwGetTime()) * 180), 0.5, 1, 0);
+		glm_quat(quat, glm_rad(sin(glfwGetTime()) * 180), 0, 1, 0);
 		mat4 rotate;
 		glm_quat_mat4(quat, rotate);
 		mat4 matrix;
@@ -90,11 +94,14 @@ int main() {
 		if (console_open) {
 			text_begin(t);
 			con_draw();
+			glEnable(GL_DEPTH_TEST);
 		}
 		
 		window_swapBuffers();
 	}
 	mesh_free(&mesh);
 	window_free();
+	
+	arena_free(&arena_default);
 	return 0;
 }

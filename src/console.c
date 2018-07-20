@@ -11,7 +11,7 @@
 #include <cglm/cglm.h>
 
 #define MAX_CONSOLE_BUFFER 8192
-static buffer_t console_buffer;
+static buffer_t console_buffer = {NULL, 0, 0};
 
 #define MAX_LINES 30
 #define MAX_LINE_LENGTH 128
@@ -66,7 +66,13 @@ static cmd_t cls   = {"cls", cmd_cld_f};
 static cmd_t color = {"color", cmd_color_f};
 
 void con_init(void) {
-	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER);
+	buffer_alloc(&console_buffer, MAX_CONSOLE_BUFFER, NULL);
+	
+	if (console_buffer.cap != MAX_CONSOLE_BUFFER) {
+		FATAL_ERROR("could not allocate console buffer");
+		return;
+	}
+	
 	cvar_register(&echo);
 	cmd_register(&clear);
 	cmd_register(&cls);
@@ -292,6 +298,6 @@ void con_seekDown(void) {
 	}
 }
 
-char *con_buffer(void) {
-	return (char*)console_buffer.data;
+buffer_t *con_buffer(void) {
+	return &console_buffer;
 }

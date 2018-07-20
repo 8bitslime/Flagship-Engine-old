@@ -19,6 +19,9 @@ src/text.c
 src/texture.c
 src/window.c
 src/objloader.c
+src/arena.c
+src/platform_win.c
+src/platform_linux.c
 libs/glad/src/glad.c
 )
 

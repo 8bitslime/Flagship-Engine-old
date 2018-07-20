@@ -73,9 +73,6 @@ void cvar_register(cvar_t *cvar) {
 	}
 	
 	if (cvars_map[hash] != NULL) {
-		
-		con_printf("!hash colission\n");
-		
 		cvar->next = cvars_map[hash]->next;
 		cvars_map[hash]->next = cvar;
 	} else {

@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,8 +17,7 @@ static GLboolean compile_status(shader_t shader) {
 		char *buffer = malloc(length + 1);
 		glGetShaderInfoLog(shader, length, &length, buffer);
 		
-		//TODO: print to console
-		printf("shader compilation error: %s", buffer);
+		con_printf("!shader compilation error:\n%s", buffer);
 		
 		free(buffer);
 		return GL_FALSE;

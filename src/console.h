@@ -1,5 +1,6 @@
 #pragma once
 #include "flagship.h"
+#include "buffer.h"
 
 extern bool_t console_open;
 extern double console_time;
@@ -22,4 +23,4 @@ void con_printf(const char *format, ...);
 void con_seekUp(void);
 void con_seekDown(void);
 
-char *con_buffer(void);
+buffer_t *con_buffer(void);

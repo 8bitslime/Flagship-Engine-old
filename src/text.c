@@ -78,6 +78,7 @@ void text_free(void) {
 }
 
 void text_begin(GLuint texture) {
+	glDisable(GL_DEPTH_TEST);
 	glUseProgram(text_program);
 	glBindVertexArray(text_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, text_vbo[1]);
